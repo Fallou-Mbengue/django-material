@@ -60,10 +60,7 @@ class Command(TemplateCommand):
             try:
                 os.makedirs(top_dir)
             except OSError as e:
-                if e.errno == errno.EEXIST:
-                    message = "'%s' already exists" % top_dir
-                else:
-                    message = e
+                message = "'%s' already exists" % top_dir if e.errno == errno.EEXIST else e
                 raise CommandError(message)
         else:
             top_dir = os.path.abspath(path.expanduser(target))

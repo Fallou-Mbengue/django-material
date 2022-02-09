@@ -9,7 +9,12 @@ class SourceCodeMixin(object):
         import itertools
 
         lines = inspect.getsourcelines(self.__class__)[0]
-        lines = [x for x in itertools.takewhile(lambda x: not x.strip().startswith('template'), lines)]
+        lines = list(
+            itertools.takewhile(
+                lambda x: not x.strip().startswith('template'), lines
+            )
+        )
+
         return ''.join(lines)
 
 

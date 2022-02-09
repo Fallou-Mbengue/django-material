@@ -17,8 +17,21 @@ DEFAULT_TEMPLATE = """
 
 class PythonObjectEncoder(DjangoJSONEncoder):
     def default(self, obj):
-        if (isinstance(obj, (date, list, dict, str, int, float, bool, type(None), Decimal)) or
-                isinstance(obj, six.string_types)):
+        if isinstance(
+            obj,
+            (
+                date,
+                list,
+                dict,
+                str,
+                int,
+                float,
+                bool,
+                type(None),
+                Decimal,
+                six.string_types,
+            ),
+        ):
             return DjangoJSONEncoder.default(self, obj)
         return '{}'.format(type(obj).__name__)
 
@@ -29,10 +42,9 @@ def test_view(request, form_cls, template_content):
 
     if request.method == 'POST' and form.is_valid():
         return JsonResponse({'cleaned_data': form.cleaned_data}, encoder=PythonObjectEncoder)
-    else:
-        context = Context({'form': form})
+    context = Context({'form': form})
 
-        template = Template('''
+    template = Template('''
             {{% load static material_form %}}
             <!DOCTYPE html>
             <html lang="en">
@@ -55,7 +67,7 @@ def test_view(request, form_cls, template_content):
             </body>
             </html>
             '''.format(template_content))
-        return HttpResponse(template.render(context))
+    return HttpResponse(template.render(context))
 
 
 def build_test_urls(testcase_cls):

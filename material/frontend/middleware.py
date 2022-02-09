@@ -16,8 +16,7 @@ class SmoothNavigationMiddleware(object):
         response = self.get_response(request)
 
         if isinstance(response, HttpResponseRedirect):
-            back = request.GET.get('back')
-            if back:
+            if back := request.GET.get('back'):
                 _, _, back_path, _, _ = urlsplit(back)
                 scheme, netloc, path, query_string, fragment = urlsplit(response['location'])
                 query_params = parse_qs(query_string)
@@ -52,13 +51,10 @@ class TurbolinksMiddleware(object):
             if is_response_redirect:
                 location = response['Location']
                 prev_location = request.session.pop('_turbolinks_redirect_to', None)
-                if prev_location is not None:
-                    # relative subsequent redirect
-                    if location.startswith('.'):
-                        location = prev_location.split('?')[0] + location
+                if prev_location is not None and location.startswith('.'):
+                    location = prev_location.split('?')[0] + location
                 request.session['_turbolinks_redirect_to'] = location
-            else:
-                if request.session.get('_turbolinks_redirect_to'):
-                    location = request.session.pop('_turbolinks_redirect_to')
-                    response['Turbolinks-Location'] = location
+            elif request.session.get('_turbolinks_redirect_to'):
+                location = request.session.pop('_turbolinks_redirect_to')
+                response['Turbolinks-Location'] = location
         return response

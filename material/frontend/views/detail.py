@@ -19,9 +19,12 @@ class DetailModelView(generic.DetailView):
         If view have no explicit `self.queryset`, tries too lookup to
         `viewflow.get_queryset`
         """
-        if self.queryset is None and self.viewset is not None:
-            if hasattr(self.viewset, 'get_queryset'):
-                return self.viewset.get_queryset(self.request)
+        if (
+            self.queryset is None
+            and self.viewset is not None
+            and hasattr(self.viewset, 'get_queryset')
+        ):
+            return self.viewset.get_queryset(self.request)
         return super(DetailModelView, self).get_queryset()
 
     def get_object_data(self):
@@ -30,9 +33,7 @@ class DetailModelView(generic.DetailView):
         Choice fields values are expanded to readable choice label.
         """
         for field in self.object._meta.fields:
-            if isinstance(field, models.AutoField):
-                continue
-            elif field.auto_created:
+            if isinstance(field, models.AutoField) or field.auto_created:
                 continue
             else:
                 choice_display_attr = "get_{}_display".format(field.name)

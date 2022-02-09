@@ -109,8 +109,7 @@ def frontend_url(request, url=None, back_link=None, absolute=True):
             back = "{}".format(quote(request.path))
         params['back'] = back
 
-    if url is not None:
-        location = '{}?{}'.format(url, params.urlencode())
-        return request.build_absolute_uri(location) if absolute else location
-    else:
+    if url is None:
         return params.urlencode()
+    location = '{}?{}'.format(url, params.urlencode())
+    return request.build_absolute_uri(location) if absolute else location

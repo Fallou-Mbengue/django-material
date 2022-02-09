@@ -63,10 +63,7 @@ class FormRenderNode(Node):
     def render(self, context):  # noqa D102
         element = self.element.resolve(context)
 
-        options = {}
-        for key, value in self.kwargs.items():
-            options[key] = value.resolve(context)
-
+        options = {key: value.resolve(context) for key, value in self.kwargs.items()}
         # render inner parts
         children = (
             node for node in self.nodelist
@@ -134,8 +131,11 @@ def jquery_datepicker_format(field):
         '%%': '%'     # A literal '%' character
     }
 
-    return re.sub('|'.join(re.escape(key) for key in subst.keys()),
-                  lambda k: subst[k.group(0)], input_format)
+    return re.sub(
+        '|'.join(re.escape(key) for key in subst),
+        lambda k: subst[k.group(0)],
+        input_format,
+    )
 
 
 @register.filter
@@ -174,8 +174,7 @@ def select_date_widget_wrapper(bound_field):
         @property
         def selects(self):
             widget = SelectDateWidget(self.bound_field.field.widget)
-            for data in widget.selects_data(self.bound_field.value()):
-                yield data
+            yield from widget.selects_data(self.bound_field.value())
 
     return Wrapper(bound_field)
 
@@ -207,7 +206,7 @@ def select_options(bound_field):
     selected = bound_field.value()
     if not isinstance(selected, (list, tuple, QuerySet)):
         selected = [selected]
-    selected = set(force_str(v) for v in selected)
+    selected = {force_str(v) for v in selected}
 
     groups = OrderedDict()
     for option in bound_field.field.widget.choices:

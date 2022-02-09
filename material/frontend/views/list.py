@@ -85,9 +85,7 @@ class ModelAttr(object):
 
     @property
     def label(self):  # noqa D102
-        if self._label:
-            return self._label
-        return _get_attr_label(self.model, self.name)
+        return self._label or _get_attr_label(self.model, self.name)
 
     @property
     def orderable(self):  # noqa D102
@@ -229,11 +227,10 @@ class DataTableMixin(ContextMixin):
         except FieldDoesNotExist:
             if attr_name == "__str__":
                 return ModelAttr(self.object_list.model, attr_name, opts.verbose_name)
-            else:
-                data_sources = [self, self.viewset] if self.viewset is not None else [self]
-                for data_source in data_sources:
-                    if hasattr(data_source, attr_name):
-                        return DataSourceAttr(data_source, attr_name)
+            data_sources = [self, self.viewset] if self.viewset is not None else [self]
+            for data_source in data_sources:
+                if hasattr(data_source, attr_name):
+                    return DataSourceAttr(data_source, attr_name)
             if hasattr(self.object_list.model, attr_name):
                 return ModelAttr(self.object_list.model, attr_name)
         raise AttributeError("Unable to lookup '{}' on {}" .format(
@@ -271,7 +268,7 @@ class DataTableMixin(ContextMixin):
         """Get a page for datatable."""
         for item in self.object_list[start:start + length]:
             columns = OrderedDict()
-            for n, field_name in enumerate(self.get_list_display()):
+            for field_name in self.get_list_display():
                 attr = self.get_data_attr(field_name)
                 value = self.format_column(item, field_name, attr.get_value(item))
                 columns[field_name] = value
@@ -287,28 +284,23 @@ class DataTableMixin(ContextMixin):
 
     def get_ordering(self):
         """Return the field or fields to use for ordering the queryset."""
-        if self.request_form.is_valid():
-            ordering = []
-            requested_order = self.request_form.cleaned_data['ordering']
-            for spec in requested_order:
-                column_num, column_dir = spec.get('column', 0), spec.get('dir', 'asc')
-                try:
-                    order = self.get_data_attr(
-                         self.get_list_display()[int(column_num)]
-                    ).orderable
-                    if order:
-                        if column_dir == 'desc':
-                            if order.startswith('-'):
-                                order = order[1:]
-                            else:
-                                order = '-' + order
-                except (IndexError, TypeError):
-                    """ Skip """
-                else:
-                    ordering.append(order)
-            return ordering
-        else:
+        if not self.request_form.is_valid():
             return self.ordering
+        ordering = []
+        requested_order = self.request_form.cleaned_data['ordering']
+        for spec in requested_order:
+            column_num, column_dir = spec.get('column', 0), spec.get('dir', 'asc')
+            try:
+                order = self.get_data_attr(
+                     self.get_list_display()[int(column_num)]
+                ).orderable
+                if order and column_dir == 'desc':
+                    order = order[1:] if order.startswith('-') else f'-{order}'
+            except (IndexError, TypeError):
+                """ Skip """
+            else:
+                ordering.append(order)
+        return ordering
 
     def get(self, request, *args, **kwargs):
         """Response with rendered html template."""
@@ -485,8 +477,7 @@ class ListModelView(TemplateResponseMixin, DataTableMixin, View):
         if self.model is None:
             self.model = queryset.model
 
-        ordering = self.get_ordering()
-        if ordering:
+        if ordering := self.get_ordering():
             if isinstance(ordering, six.string_types):
                 ordering = (ordering,)
             queryset = queryset.order_by(*ordering)
@@ -497,11 +488,10 @@ class ListModelView(TemplateResponseMixin, DataTableMixin, View):
             return format_html('<i class="material-icons">{}</i>'.format(
                 'check' if value else 'close'
             ))
-        else:
-            formatted = super(ListModelView, self).format_column(item, field_name, value)
-            if field_name in self.get_list_display_links(self.get_list_display()):
-                formatted = format_html('<a href="{}">{}</a>', self.get_item_url(item), formatted)
-            return formatted
+        formatted = super(ListModelView, self).format_column(item, field_name, value)
+        if field_name in self.get_list_display_links(self.get_list_display()):
+            formatted = format_html('<a href="{}">{}</a>', self.get_item_url(item), formatted)
+        return formatted
 
     def get_item_url(self, item):
         """Link to object detail to `list_display_links` columns."""

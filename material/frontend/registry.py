@@ -6,8 +6,10 @@ class Registry(object):
 
     def modules(self):
         """List of modules in the frontend according to it's order."""
-        return sorted([module for module in self._registry.values()],
-                      key=lambda module: (module.order, module.label))
+        return sorted(
+            list(self._registry.values()),
+            key=lambda module: (module.order, module.label),
+        )
 
     def installed_modules(self):
         """List of installed modules.
@@ -43,10 +45,7 @@ class Registry(object):
         config have the responsibility to check the module installed
         state.
         """
-        patterns = []
-        for module in self.modules():
-            patterns.append(module.urls)
-        return patterns
+        return [module.urls for module in self.modules()]
 
 
 modules = Registry()
