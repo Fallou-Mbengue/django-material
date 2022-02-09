@@ -78,14 +78,12 @@ class FormNode(Node):
         if layout is not None:
             layout = layout.resolve(context)
 
-        if layout is None:
-            if 'view' in context:
-                view = context['view']
-                if hasattr(view, 'layout'):
-                    layout = view.layout
-        if layout is None:
-            if hasattr(form, 'layout'):
-                layout = form.layout
+        if layout is None and 'view' in context:
+            view = context['view']
+            if hasattr(view, 'layout'):
+                layout = view.layout
+        if layout is None and hasattr(form, 'layout'):
+            layout = form.layout
 
         template_name = self.kwargs.get('template')
         if template_name is None:
@@ -184,14 +182,12 @@ class FormPartNode(Node):
         parts = context['form_parts']
 
         if self.section in parts[part]:
-            # already rendered
-            if self.varname is not None:
-                varname = self.varname.resolve(context)
-                context[varname] = parts[part][self.section]
-                return ""
-            else:
+            if self.varname is None:
                 return parts[part][self.section]
 
+            varname = self.varname.resolve(context)
+            context[varname] = parts[part][self.section]
+            return ""
         # child parts
         children = (
             node for node in self.nodelist
@@ -205,9 +201,7 @@ class FormPartNode(Node):
             context[self.varname.resolve(context)] = value
             return ''
         else:
-            if not value:
-                return ''
-            return value
+            return '' if not value else value
 
 
 @register.tag('attrs')
@@ -281,13 +275,10 @@ class WidgetAttrsNode(Node):
         result.update(widget_attrs)
 
         for attr, (value, action) in override.items():
-            if action == 'override':
+            if action != 'override' and action == 'append' and attr in result:
+                result[attr] += f' {value}'
+            elif action != 'override' and action == 'append' or action == 'override':
                 result[attr] = value
-            elif action == 'append':
-                if attr in result:
-                    result[attr] += " " + value
-                else:
-                    result[attr] = value
             elif action == 'remove':
                 result.pop(attr, "")
 

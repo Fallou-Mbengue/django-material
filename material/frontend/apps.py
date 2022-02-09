@@ -176,6 +176,5 @@ def update_modules(app_config, verbosity=2, interactive=True, **kwargs):
         if ok_to_delete == 'yes':
             stale_modules.delete()
             print("Stale modules deleted.")
-        else:
-            if verbosity >= 2 or interactive:
-                print("Stale modules remain.")
+        elif verbosity >= 2 or interactive:
+            print("Stale modules remain.")

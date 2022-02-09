@@ -21,10 +21,9 @@ class SelectDateWidget(Widget):
         """Backward compatible date regexp source."""
         if hasattr(self.widget, 'date_re'):
             return self.widget.date_re
-        else:
-            # django 1.8
-            from django.forms.widgets.extra import DATE_RE
-            return DATE_RE
+        # django 1.8
+        from django.forms.widgets.extra import DATE_RE
+        return DATE_RE
 
     def split_value(self, value):
         """Bit magic for widget value splitting into date components."""
@@ -42,12 +41,10 @@ class SelectDateWidget(Widget):
                         year_val, month_val, day_val = v.year, v.month, v.day
                     except ValueError:
                         pass
-                else:
-                    match = self.date_re.match(value)
-                    if match:
-                        year_val, month_val, day_val = [
-                            int(v) for v in match.groups()
-                        ]
+                elif match := self.date_re.match(value):
+                    year_val, month_val, day_val = [
+                        int(v) for v in match.groups()
+                    ]
 
         return year_val, month_val, day_val
 

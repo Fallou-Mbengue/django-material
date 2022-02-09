@@ -54,9 +54,12 @@ class ModelViewMixin(object):
         If view have no explicit `self.queryset`, tries too lookup to
         `viewflow.get_queryset`
         """
-        if self.queryset is None and self.viewset is not None:
-            if hasattr(self.viewset, 'get_queryset'):
-                return self.viewset.get_queryset(self.request)
+        if (
+            self.queryset is None
+            and self.viewset is not None
+            and hasattr(self.viewset, 'get_queryset')
+        ):
+            return self.viewset.get_queryset(self.request)
         return super(ModelViewMixin, self).get_queryset()
 
     def get_object(self):
